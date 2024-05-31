@@ -263,7 +263,7 @@
        inkscape:export-filename="MiniGames\CarCrash\Car.png"
        inkscape:export-xdpi="1177.1058"
        inkscape:export-ydpi="1177.1058"
-       transform="matrix(0.99849982,0,0,0.99849982,-19.945084,-17.135007)"><path
+       transform="matrix(0,0.99849982,-0.99849982,0,44.675285,-19.281638)"><path
          id="path1"
          style="display:inline;fill:none;stroke:#0b0c31;stroke-width:1.3249;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
          inkscape:label="BackGround"
@@ -417,7 +417,7 @@
        inkscape:randomized="0"
        d="m 23.977863,13.229166 c 0,1.253087 -7.596434,5.63889 -8.681639,5.012347 -1.085205,-0.626543 -1.085205,-9.3981506 0,-10.024694 1.085205,-0.6265433 8.681639,3.75926 8.681639,5.012347 z"
        inkscape:transform-center-x="-3.0219601"
-       transform="matrix(1.196761,0,0,1.196761,-3.2175437,-2.9228449)"
+       transform="matrix(1.196761,0,0,1.196761,-4.4929913,5.8932833)"
        inkscape:label="Arrow"
        inkscape:export-filename="MiniGames\CarCrash\Arrow.png"
        inkscape:export-xdpi="1201.2473"

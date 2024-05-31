@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class CarCrash : MonoBehaviour
 {
@@ -12,13 +13,20 @@ public class CarCrash : MonoBehaviour
     private bool win = false;
 
     // INPUT
-    // Buttons
+    // KeyBoard
     private const KeyCode INPUT_PLAYER_UP = KeyCode.UpArrow;
     private const KeyCode INPUT_PLAYER_DOWN = KeyCode.DownArrow;
     private const KeyCode INPUT_PLAYER_LEFT = KeyCode.LeftArrow;
     private const KeyCode INPUT_PLAYER_RIGHT = KeyCode.RightArrow;
+    // Mobile
+    public float inputTouchMaxRange = 1f;
+    private bool inputIsTouching;
+    private Vector2 inputFirstPosition;
+    private Vector2 inputCurrentPosition;
     // Properties
     private Vector3 inputDirection = Vector2.zero;
+
+
 
     // CAMERA
     // Init
@@ -47,26 +55,30 @@ public class CarCrash : MonoBehaviour
     // TARGET PROPERTIES
     // Init
     public GameObject target;
-    public float targetInitialDistance = 10f;
+    public float targetDistance = 10f;
     // Movements
     public float targetSpeed = 10f;
     private Vector3 targetPosition = Vector3.zero;
     private float targetRotation;
     private float targetMoveDirection;
+    private Vector3 direction = Vector3.zero;
     // Detection
     public float targetDistancDetection = 1f;
     // To Target
     private Vector3 playerToTargetDirection;
     private float playerToTargetDistance;
 
+    // Line
+    public LineRenderer lineRenderer;
+    public int linePointCount = 10;
 
     // ----------------~~~~~~~~~~~~~~~~~~~==========================# // INITIALIZATION
     
     void Start()
     {
-        SetPlayerMovementInput();
         TargetInit();
         PlayerInit();
+        CreateLine();
     }
 
     // ----------------~~~~~~~~~~~~~~~~~~~==========================# // UPDATE
@@ -92,14 +104,42 @@ public class CarCrash : MonoBehaviour
 
     private void InputUpdate()
     {
+        KeyBoardInput();
+        MobileInput();
+    }
+
+    // KeyBoard Input
+    private void KeyBoardInput()
+    {
         // Update Input Direction Based On Arrows
-        inputDirection.x = GetAxisOnInput(Input.GetKey(INPUT_PLAYER_RIGHT), Input.GetKey(INPUT_PLAYER_LEFT));
+        inputDirection.x = GetAxisOnInput(Input.GetKey(INPUT_PLAYER_LEFT), Input.GetKey(INPUT_PLAYER_RIGHT));
         inputDirection.y = GetAxisOnInput(Input.GetKey(INPUT_PLAYER_DOWN), Input.GetKey(INPUT_PLAYER_UP));
         // Clamp It If It's Above 1f
         if (inputDirection.magnitude > 1f) inputDirection = inputDirection.normalized;
     }
 
     private float GetAxisOnInput(bool pKeyAIsPressed, bool pKeyBIsPressed) => pKeyAIsPressed ? pKeyBIsPressed ? 0f : -1f : pKeyBIsPressed ? 1f : 0f;
+
+    // Mobile
+    private void MobileInput()
+    {
+
+        if (Input.touchCount > 0)
+        {
+            if (!inputIsTouching) { inputFirstPosition = Input.GetTouch(0).position; inputIsTouching = true; }
+
+            inputCurrentPosition = Input.GetTouch(0).position;
+            inputDirection = (inputCurrentPosition - inputFirstPosition);
+            inputDirection = inputDirection.magnitude > inputTouchMaxRange ? inputDirection.normalized * inputTouchMaxRange : inputDirection;
+            inputDirection /= inputTouchMaxRange;
+
+
+            print(inputDirection);
+
+            return;
+        }
+        inputIsTouching = false;
+    }
 
     // ----------------~~~~~~~~~~~~~~~~~~~==========================# // TARGET
 
@@ -154,7 +194,7 @@ public class CarCrash : MonoBehaviour
         targetPosition.y = Mathf.Sin(Mathf.Deg2Rad * targetRotation);
 
         // Apply Target Position
-        target.transform.position = middlePoint + (Vector2)targetPosition * targetInitialDistance;
+        target.transform.position = middlePoint + (Vector2)targetPosition * targetDistance;
     }
 
     // ----------------~~~~~~~~~~~~~~~~~~~==========================# // ARROW
@@ -168,7 +208,11 @@ public class CarCrash : MonoBehaviour
     // ----------------~~~~~~~~~~~~~~~~~~~==========================# // PLAYER
 
     // Init
-    private void PlayerInit() => player.transform.eulerAngles = player.transform.forward * UnityEngine.Random.Range(0f, 360f);
+    private void PlayerInit()
+    {
+        SetPlayerMovementInput();
+        player.transform.eulerAngles = player.transform.forward * UnityEngine.Random.Range(0f, 360f);
+    }
 
     // Movements State Machin
     private void SetPlayerMovementInput() => PlayerMove = PlayerMoveInput;
@@ -181,7 +225,7 @@ public class CarCrash : MonoBehaviour
     // Player Movements
     private void PlayerMoveInput()
     {
-        // Apply Player Movement
+        /*// Apply Player Movement
         playerAcceleration = Quaternion.Euler(0, 0, player.transform.eulerAngles.z) * playerAccelerationDirection * inputDirection.y * playerAccelerationSpeed;
         playerVelocity += playerAcceleration * Time.deltaTime;
         playerVelocity *= Mathf.Pow(playerFriction, Time.deltaTime);
@@ -191,7 +235,20 @@ public class CarCrash : MonoBehaviour
         playerAngularAcceleration = inputDirection.x * playerVelocity.magnitude * playerAngularAccelerationSpeed;
         playerAngularVelocity += playerAngularAcceleration * Time.deltaTime;
         playerAngularVelocity *= Mathf.Pow(playerAngularFriction, Time.deltaTime);
-        player.transform.eulerAngles += player.transform.forward * playerAngularVelocity * Time.deltaTime;
+        player.transform.eulerAngles += player.transform.forward * playerAngularVelocity * Time.deltaTime;*/
+
+        direction.x = Mathf.Cos(Mathf.Deg2Rad * player.transform.forward.z);
+        direction.y = Mathf.Sin(Mathf.Deg2Rad * player.transform.forward.z);
+
+        // Apply Player Movement
+        playerAcceleration = Quaternion.Euler(0, 0, player.transform.eulerAngles.z) * direction * playerAccelerationSpeed * inputDirection.magnitude;
+        playerVelocity += playerAcceleration * Time.deltaTime;
+        playerVelocity *= Mathf.Pow(playerFriction, Time.deltaTime);
+        player.transform.position += playerVelocity * Time.deltaTime;
+
+        if (inputDirection.magnitude <= 0f) return;
+
+        player.transform.eulerAngles = player.transform.forward * Mathf.LerpAngle(player.transform.eulerAngles.z, Mathf.Rad2Deg * Mathf.Atan2(inputDirection.y, inputDirection.x), Time.deltaTime);
     }
 
     private void PlayerMoveFollowTarget() => player.transform.position = (Vector3)(Vector2)target.transform.position + Vector3.forward * player.transform.position.z;
@@ -203,4 +260,21 @@ public class CarCrash : MonoBehaviour
     private void CameraFollowPlayer()
         => camera.transform.position = (Vector3)(Vector2)player.transform.position + playerVelocity * cameraPlayerVelocityRatio + Vector3.forward * camera.transform.position.z;
 
+
+    // ----------------~~~~~~~~~~~~~~~~~~~==========================# // LINE
+
+    private void CreateLine()
+    {
+        Vector3 lCurrentPointPosition = Vector3.forward;
+        print(lCurrentPointPosition);
+        float lAngle = Mathf.Deg2Rad * 360f / (float)linePointCount;
+        lineRenderer.positionCount = linePointCount;
+
+        for (int lCurrentPointIndex = 0; lCurrentPointIndex < linePointCount; lCurrentPointIndex++)
+        {
+            lCurrentPointPosition.x = Mathf.Cos(lAngle * lCurrentPointIndex) * targetDistance;
+            lCurrentPointPosition.y = Mathf.Sin(lAngle * lCurrentPointIndex) * targetDistance;
+            lineRenderer.SetPosition(lCurrentPointIndex, lCurrentPointPosition);
+        }
+    }
 }
